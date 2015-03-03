@@ -26,6 +26,7 @@ import random
 import logging
 import wget
 import json
+import os
 
 WebUrlPrefix = "http://www.mixcloud.com/"
 ApiUrlPrefix = "http://api.mixcloud.com/"
@@ -81,17 +82,14 @@ def get_tracks_tag(tag):
     playable_tags = soup.find_all('span', {'class': 'play-button'})
     track_ids = []
     for tag in playable_tags:
-        track_ids.append(tag.attrs['m-url'])
+        if tag.has_attr('m-url'):
+            track_ids.append(tag.attrs['m-url'])
     return track_ids
 
-def download_track(track_id):
-    track_info = get_track_info(track_id)
+def download_track(track_id, filename):
     stream = get_stream_url(track_id)
-
-    filename = track_info["name"] + ".mp3"
     logging.info("Downloading {} -> {}".format(stream, filename))
     wget.download(stream, filename)
-
 
 def main():
     logging.getLogger().setLevel(getattr(logging, 'INFO'))
@@ -102,16 +100,28 @@ def main():
         logging.getLogger().setLevel(getattr(logging, a))
 
     track_url = arguments['-l']
-    if track_url is not None:
-        download_track(get_track_id(track_url))
+    if track_url is not None :
+        track_id = get_track_id(track_url)
+        track_info = get_track_info(track_id)
+        filename = track_info["name"] + ".mp3"
+        if os.path.exists(filename):
+            logging.warning("Skipping '{}', file '{}' already exists.".format(track_id, filename))
+            return 0
+        download_track(track_id, filename)
         return 0
 
     tag = arguments['-t']
     if tag is not None:
         tracks = get_tracks_tag(tag)
         logging.info("Found {} tracks".format(tracks))
-        for track in tracks:
-            download_track(track)
+        for track_url in tracks:
+            track_id = get_track_id(track_url)
+            track_info = get_track_info(track_id)
+            filename = track_info["name"] + ".mp3"
+            if os.path.exists(filename):
+                logging.warning("Skipping '{}', file '{}' already exists.".format(track_id, filename))
+            else:
+                download_track(track_id, filename)
 
 if __name__ == '__main__':
     sys.exit(main())

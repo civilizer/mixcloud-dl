@@ -9,14 +9,15 @@ __doc__ =\
 """Unclouder.
 
 Usage:
-    uncloud.py [-l TRACK_URL]
-    uncloud.py [-l TRACK_URL] [-L LOGLEVEL]
-    uncloud.py [-t TAG] [-L LOGLEVEL]
+    uncloud.py -l TRACK_URL
+    uncloud.py -l TRACK_URL [-L LOGLEVEL]
+    uncloud.py -t TAG [-L LOGLEVEL]
+    uncloud.py [-h]
 
 Options:
-    -l TRACK_URL
-    -L LOGLEVEL
-    -t tag
+    -l TRACK_URL download a file with a given mixcloud url
+    -L LOGLEVEL 
+    -t tag download all files with given tag
 
 """
 from docopt import docopt
@@ -94,12 +95,13 @@ def download_track(track_id, filename):
 def main():
     logging.getLogger().setLevel(getattr(logging, 'INFO'))
     arguments = docopt(__doc__, version='Uncloud 0.1')
-    print(arguments)
+    #print(arguments)
     loglevel = arguments['-L']
+    track_url = arguments['-l']
+    tag = arguments['-t']
     if loglevel is not None and loglevel in ('CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'):
         logging.getLogger().setLevel(getattr(logging, a))
 
-    track_url = arguments['-l']
     if track_url is not None :
         track_id = get_track_id(track_url)
         track_info = get_track_info(track_id)
@@ -110,8 +112,7 @@ def main():
         download_track(track_id, filename)
         return 0
 
-    tag = arguments['-t']
-    if tag is not None:
+    elif tag is not None:
         tracks = get_tracks_tag(tag)
         logging.info("Found {} tracks".format(tracks))
         for track_url in tracks:
@@ -122,6 +123,10 @@ def main():
                 logging.warning("Skipping '{}', file '{}' already exists.".format(track_id, filename))
             else:
                 download_track(track_id, filename)
+
+    else:
+        print(__doc__)
+
 
 if __name__ == '__main__':
     sys.exit(main())
